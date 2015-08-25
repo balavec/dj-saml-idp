@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import
+import os
 import logging
 
 from django.contrib import auth
@@ -16,6 +17,21 @@ from . import metadata
 from . import registry
 from . import xml_signing
 
+BASE_TEMPLATE_DIR = 'saml2idp'
+
+
+def _get_template_names(filename, processor=None):
+    """
+    Create a list of template names to use based on the processor name. This
+    makes it possible to have processor-specific templates.
+    """
+    specific_templates = []
+    if processor and processor.name:
+        specific_templates = [
+            os.path.join(BASE_TEMPLATE_DIR, processor.name, filename)]
+
+    return specific_templates + [os.path.join(BASE_TEMPLATE_DIR, filename)]
+
 
 def _generate_response(request, processor):
     """
@@ -25,10 +41,13 @@ def _generate_response(request, processor):
     try:
         tv = processor.generate_response()
     except exceptions.UserNotAuthorized:
-        return render_to_response('saml2idp/invalid_user.html',
+        template_names = _get_template_names('invalid_user.html', processor)
+        return render_to_response(template_names,
                                   context_instance=RequestContext(request))
 
-    return render_to_response('saml2idp/login.html', tv,
+    template_names = _get_template_names('login.html', processor)
+    return render_to_response(template_names,
+                              tv,
                               context_instance=RequestContext(request))
 
 
@@ -95,7 +114,8 @@ def logout(request):
     """
     auth.logout(request)
     tv = {}
-    return render_to_response('saml2idp/logged_out.html', tv,
+    return render_to_response(_get_template_names('logged_out.html'),
+                              tv,
                               context_instance=RequestContext(request))
 
 
@@ -115,7 +135,8 @@ def slo_logout(request):
     #XXX: For now, simply log out without validating the request.
     auth.logout(request)
     tv = {}
-    return render_to_response('saml2idp/logged_out.html', tv,
+    return render_to_response(_get_template_names('logged_out.html'),
+                              tv,
                               context_instance=RequestContext(request))
 
 
@@ -134,4 +155,6 @@ def descriptor(request):
         'slo_url': slo_url,
         'sso_url': sso_url
     }
-    return xml_response(request, 'saml2idp/idpssodescriptor.xml', tv)
+    return xml_response(request,
+                        os.path.join(BASE_TEMPLATE_DIR, 'idpssodescriptor.xml'),
+                        tv)
