@@ -16,7 +16,7 @@ setup(
     install_requires=[
         'Django>=1.4',
         'M2Crypto>=0.20.1',
-        'BeautifulSoup>=3.2.0'],
+        'beautifulsoup4>=4.4.0'],
     license='MIT',
     packages=['saml2idp'],
     url='http://github.com/mobify/dj-saml-idp',
